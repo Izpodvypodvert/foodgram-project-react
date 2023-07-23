@@ -120,22 +120,21 @@ def create_shoping_list(user):
     return response
 
 
-def create_model_instance(request, recipe, serializer_name):
-    """Добавляет рецепт в избранное или список покупок."""
+def add_recipe(request, recipe, serializer_name):
+    """Добавляет рецепт в список покупок или избранное."""
     serializer = serializer_name(
-        data={'user': request.user.id, 'recipe': recipe.id, },
-        context={'request': request}
-    )
+        data={'recipe': recipe.id,
+              'user': request.user.id},
+        context={'request': request})
     serializer.is_valid(raise_exception=True)
     serializer.save()
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-def delete_model_instance(request, model_name, recipe, error_message):
-    """Удаляет рецепт из избранного или из списка покупок."""
-    if not model_name.objects.filter(user=request.user,
-                                     recipe=recipe).exists():
-        return Response({'errors': error_message},
+def delete_recipe(request, model, recipe):
+    """Удаляет рецепт из списка покупок или из избранного."""
+    if not model.objects.filter(recipe=recipe, user=request.user).exists():
+        return Response({'errors': 'Рецепт отсутствует'},
                         status=status.HTTP_400_BAD_REQUEST)
-    model_name.objects.filter(user=request.user, recipe=recipe).delete()
+    model.objects.filter(recipe=recipe, user=request.user).delete()
     return Response(status=status.HTTP_204_NO_CONTENT)

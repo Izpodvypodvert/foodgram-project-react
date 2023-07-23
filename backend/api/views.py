@@ -15,8 +15,8 @@ from api.serializers import (CartSerializer, FavoriteSerializer,
                              SubscribeSerializer, TagSerializer,
                              UserSerializer, UserSubscribeSerializer)
 from api.validators import password_validator
-from api.utils import (create_model_instance, create_shoping_list,
-                       delete_model_instance)
+from api.utils import (add_recipe, create_shoping_list,
+                       delete_recipe)
 from foodgram.models import Cart, FavoriteRecipe, Ingredient, Recipe, Tag
 from users.models import Subscription, User
 
@@ -124,15 +124,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def recipe_to_favorites(self, request, pk):
         """Добавляет рецепт в избранное."""
         recipe = get_object_or_404(Recipe, id=pk)
-        return create_model_instance(request, recipe, FavoriteSerializer)
+        return add_recipe(request, recipe, FavoriteSerializer)
 
     @favorite.mapping.delete
     def remove_recipe_from_favorites(self, request, pk):
         """Удаляет рецепт из избранного."""
         recipe = get_object_or_404(Recipe, id=pk)
-        error_message = 'У вас нет этого рецепта в избранном'
-        return delete_model_instance(request, FavoriteRecipe,
-                                     recipe, error_message)
+        return delete_recipe(request, FavoriteRecipe, recipe)
 
     @action(detail=True, permission_classes=(IsAuthenticated, IsUserNotBanned))
     def shopping_cart(self, request, pk):
@@ -142,14 +140,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def recipe_to_cart(self, request, pk):
         """Добавляет рецепт в список покупок."""
         recipe = get_object_or_404(Recipe, id=pk)
-        return create_model_instance(request, recipe, CartSerializer)
+        return add_recipe(request, recipe, CartSerializer)
 
     @shopping_cart.mapping.delete
     def remove_recipe_from_cart(self, request, pk):
         """Удаляет рецепт из списка покупок."""
         recipe = get_object_or_404(Recipe, id=pk)
-        error_message = 'У вас нет этого рецепта в списке покупок'
-        return delete_model_instance(request, Cart, recipe, error_message)
+        return delete_recipe(request, Cart, recipe)
 
     @action(methods=("get",), detail=False,
             permission_classes=(IsAuthenticated, IsUserNotBanned))
