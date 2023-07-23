@@ -92,7 +92,7 @@ class UserViewSet(viewsets.ModelViewSet):
                                  author=pk).delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(methods=("get",), detail=False,
+    @action(methods=('get',), detail=False,
             permission_classes=(IsAuthenticated, IsUserNotBanned))
     def subscriptions(self, request):
         """Список подписок пользоваетеля."""
@@ -109,7 +109,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = Recipe.objects.select_related("author")
+    queryset = Recipe.objects.select_related('author')
     serializer_class = RecipeSerializer
     permission_classes = (IsAuthorOrAdminOrReadOnly, IsUserNotBanned)
     pagination_class = LimitPagination
@@ -148,7 +148,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
         return delete_recipe(request, Cart, recipe)
 
-    @action(methods=("get",), detail=False,
+    @action(methods=('get',), detail=False,
             permission_classes=(IsAuthenticated, IsUserNotBanned))
     def download_shopping_cart(self, request):
         """Отправка файла со списком покупок."""

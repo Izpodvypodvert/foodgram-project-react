@@ -134,7 +134,7 @@ def add_recipe(request, recipe, serializer_name):
 def delete_recipe(request, model, recipe):
     """Удаляет рецепт из списка покупок или из избранного."""
     if not model.objects.filter(recipe=recipe, user=request.user).exists():
-        return Response({'errors': 'Рецепт отсутствует'},
+        return Response({'errors': 'Рецепт отсутствует.'},
                         status=status.HTTP_400_BAD_REQUEST)
     model.objects.filter(recipe=recipe, user=request.user).delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
