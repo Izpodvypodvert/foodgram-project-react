@@ -5,6 +5,7 @@ from foodgram.models import Ingredient, Recipe, Tag
 
 class RecipeFilter(FilterSet):
     """Фильтр для рецептов."""
+
     name = filters.CharFilter(lookup_expr='icontains')
     is_in_shopping_cart = filters.BooleanFilter(
         method='get_is_in_shopping_cart'
@@ -38,6 +39,7 @@ class RecipeFilter(FilterSet):
 
 class IngredientFilter(FilterSet):
     """Фильтр для ингридиентов."""
+
     name = filters.CharFilter(lookup_expr='icontains')
 
     class Meta:

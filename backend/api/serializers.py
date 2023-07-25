@@ -6,7 +6,7 @@ from django.core.files.base import ContentFile
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
-from api.utils import create_recipe_ingredients
+from api.utils import create_recipe_ingredients, ReadOnlyFieldsMixin
 from api.validators import ingredients_validator, tags_validator
 from foodgram.models import (Cart, FavoriteRecipe, Ingredient,
                              Recipe, Tag, IngredientRecipe)
@@ -15,6 +15,7 @@ from users.models import Subscription, User
 
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор для модели User."""
+
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta:
@@ -26,6 +27,7 @@ class UserSerializer(serializers.ModelSerializer):
     def validate_password(self, value):
         """Преобразует обычный текстовый пароль в хэш,
           который подходит для хранения в базе данных"""
+
         return make_password(value)
 
     def create(self, validated_data):
@@ -39,8 +41,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_subscribed(self, author_recipe) -> bool:
         """Определяет подписан ли пользователь на автора рецепта."""
+
         request = self.context.get('request')
-        if request is None or request.user.is_anonymous:
+        if not request:
             return False
         return (request.user.is_authenticated
                 and Subscription.objects.filter(
@@ -48,26 +51,24 @@ class UserSerializer(serializers.ModelSerializer):
                 ).exists())
 
 
-class TagSerializer(serializers.ModelSerializer):
+class TagSerializer(ReadOnlyFieldsMixin, serializers.ModelSerializer):
     """Сериализатор для модели Tag."""
 
     class Meta:
         model = Tag
         fields = '__all__'
-        read_only_fields = ('__all__',)
 
 
-class ShortRecipeSerializer(serializers.ModelSerializer):
+class ShortRecipeSerializer(ReadOnlyFieldsMixin, serializers.ModelSerializer):
     """Сериализатор для модели Recipe
     c укороченным набор полей"""
 
     class Meta:
         model = Recipe
         fields = 'id', 'name', 'image', 'cooking_time'
-        read_only_fields = ('__all__',)
 
 
-class UserSubscribeSerializer(UserSerializer):
+class UserSubscribeSerializer(ReadOnlyFieldsMixin, UserSerializer):
     """Сериализатор для вывода авторов на которых подписан  пользователь."""
 
     recipes = ShortRecipeSerializer(many=True, read_only=True)
@@ -85,22 +86,24 @@ class UserSubscribeSerializer(UserSerializer):
             'recipes',
             'recipes_count',
         )
-        read_only_fields = ('__all__',)
 
     def get_recipes_count(self, author_recipe) -> int:
         """Отображает общее количество рецептов у каждого автора."""
+
         return author_recipe.recipes.count()
 
 
-class IngredientSerializer(serializers.ModelSerializer):
+class IngredientSerializer(ReadOnlyFieldsMixin, serializers.ModelSerializer):
     """Сериализатор для ингредиентов."""
+
     class Meta:
         model = Ingredient
         fields = '__all__'
-        read_only_fields = ('__all__',)
 
 
 class Base64ImageField(serializers.ImageField):
+    """Декодирует изображение из base64."""
+
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
@@ -113,6 +116,7 @@ class Base64ImageField(serializers.ImageField):
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
     """Сериализатор ингредиентов для работы с рецептами."""
+
     id = serializers.IntegerField(source='ingredient.id')
     name = serializers.CharField(source='ingredient.name')
     measurement_unit = serializers.CharField(
@@ -156,14 +160,15 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def get_is_in_shopping_cart(self, recipe):
         """Проверяет находится ли рецепт в списке  покупок."""
+
         request = self.context.get('request')
-        if (request and hasattr(request, 'user')
-                and request.user.is_authenticated):
+        if request and request.user.is_authenticated:
             return request.user.cart.filter(recipe=recipe).exists()
         return False
 
     def get_is_favorited(self, recipe):
         """Проверяет находится ли рецепт в избранном."""
+
         request = self.context.get('request')
         if (request and hasattr(request, 'user')
                 and request.user.is_authenticated):
@@ -172,27 +177,24 @@ class RecipeSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Проверяет теги, ингредиенты и нормализует данные."""
-        author = self.context.get('request').user
 
+        author = self.context.get('request').user
         tag_ids = self.initial_data.get('tags')
         ingredients = self.initial_data.get('ingredients')
-
         tags = tags_validator(tag_ids)
         ingredients = ingredients_validator(ingredients)
-
         data.update({'author': author,
                      'ingredients': ingredients, 'tags': tags})
         return data
 
     def create(self, validated_data):
         """Создаёт рецепт."""
+
         ingredients = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-
         recipe = Recipe.objects.create(**validated_data)
         create_recipe_ingredients(recipe, ingredients)
         recipe.tags.set(tags)
-
         return recipe
 
     def update(self, recipe, validated_data):
@@ -201,11 +203,9 @@ class RecipeSerializer(serializers.ModelSerializer):
         tags = validated_data.pop('tags')
         recipe.tags.clear()
         recipe.tags.set(tags)
-
         ingredients = validated_data.pop('ingredients')
         recipe.ingredients.clear()
         create_recipe_ingredients(recipe, ingredients)
-
         super().update(recipe, validated_data)
         recipe.save()
         return recipe

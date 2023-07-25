@@ -12,6 +12,7 @@ from foodgram.models import IngredientRecipe
 def create_recipe_ingredients(recipe, ingredients):
     """Создаёт объект IngredientRecipe
     связывающий объекты Recipe и Ingredient."""
+
     recipe_ingredients = []
 
     for ingredient, amount in ingredients.values():
@@ -23,6 +24,7 @@ def create_recipe_ingredients(recipe, ingredients):
 
 def add_page_to_pdf(pdf):
     """Добавляет страницу в pdf файл."""
+
     pdf.add_page()
     pdf.image('/app/api/pdf/background.jpg', x=0, y=0, w=210, h=297)
     return pdf
@@ -31,6 +33,7 @@ def add_page_to_pdf(pdf):
 def set_pdf_text(pdf, new_size=15, text='', r=0, g=0, b=0, border=False, w=190,
                  h=20):
     """Настраивает отображение текста в pdf файле."""
+
     pdf.set_font('NotoSerif', size=new_size)
     pdf.set_text_color(r, g, b)
     pdf.cell(w, h, txt=text,
@@ -42,6 +45,7 @@ def set_pdf_text(pdf, new_size=15, text='', r=0, g=0, b=0, border=False, w=190,
 
 def generate_pdf_file(ingredients):
     """Генерирует pdf файл."""
+
     pdf = FPDF()
     pdf = add_page_to_pdf(pdf)
     font = 'NotoSerif-Italic-VariableFont_wdth,wght.ttf'
@@ -106,6 +110,7 @@ def generate_pdf_file(ingredients):
 
 def create_shoping_list(user):
     """Формирует список ингредиентов для покупки."""
+
     ingredients = IngredientRecipe.objects.filter(
         recipe__cart_recipes__user=user
     ).values(
@@ -122,6 +127,7 @@ def create_shoping_list(user):
 
 def add_recipe(request, recipe, serializer_name):
     """Добавляет рецепт в список покупок или избранное."""
+
     serializer = serializer_name(
         data={'recipe': recipe.id,
               'user': request.user.id},
@@ -133,8 +139,20 @@ def add_recipe(request, recipe, serializer_name):
 
 def delete_recipe(request, model, recipe):
     """Удаляет рецепт из списка покупок или из избранного."""
+
     if not model.objects.filter(recipe=recipe, user=request.user).exists():
         return Response({'errors': 'Рецепт отсутствует.'},
                         status=status.HTTP_400_BAD_REQUEST)
     model.objects.filter(recipe=recipe, user=request.user).delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ReadOnlyFieldsMixin:
+    """Миксин для сериализаторов.
+      Делает все поля - полями только для чтения."""
+
+    def get_fields(self):
+        fields = super().get_fields()
+        for field in fields.values():
+            field.read_only = True
+        return fields

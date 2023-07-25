@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 ADMIN = 'admin'
-BANNED = 'BANNED'
+BANNED = 'banned'
 USER = 'user'
 
 ROLES_CHOICES = [

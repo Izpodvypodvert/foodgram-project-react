@@ -45,6 +45,7 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated, IsUserNotBanned))
     def me(self, request):
         """Получить текущего пользователя."""
+
         serializer = UserSerializer(request.user)
         return Response(serializer.data,
                         status=status.HTTP_200_OK)
@@ -53,6 +54,7 @@ class UserViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated, IsUserNotBanned))
     def set_password(self, request):
         """Изменение пароля текущего пользователя."""
+
         new_password = password_validator(request)
         new_data = {'password': new_password}
         serializer = UserSerializer(
@@ -62,40 +64,36 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response({'detail': 'Пароль успешно изменен!'},
                         status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=True, permission_classes=(IsAuthenticated, IsUserNotBanned))
+    @action(methods=('post', 'delete'),
+            detail=True,
+            permission_classes=(IsAuthenticated, IsUserNotBanned))
     def subscribe(self, request, pk):
         """Подписка на автора рецепта."""
-
-    @subscribe.mapping.post
-    def create_subscribe(self, request, pk):
-        """Создает подписку на автора рецепта."""
         author = get_object_or_404(User, id=pk)
-        serializer = SubscribeSerializer(
-            data={'subscriber': request.user.pk, 'author': author.pk},
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    @subscribe.mapping.delete
-    def delete_subscribe(self, request, pk):
-        """Удаляет подписку на автора рецепта."""
-        author = get_object_or_404(User, id=pk)
-        if not Subscription.objects.filter(subscriber=request.user,
-                                           author=author).exists():
-            return Response(
-                {'errors': 'Вы не подписаны на этого пользователя'},
-                status=status.HTTP_400_BAD_REQUEST
+        if request.method == 'POST':
+            serializer = SubscribeSerializer(
+                data={'subscriber': request.user.pk, 'author': author.pk},
+                context={'request': request}
             )
-        Subscription.objects.get(subscriber=request.user.id,
-                                 author=pk).delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        if request.method == 'DELETE':
+            if not Subscription.objects.filter(subscriber=request.user,
+                                               author=author).exists():
+                return Response(
+                    {'errors': 'Вы не подписаны на этого пользователя'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            Subscription.objects.get(subscriber=request.user.id,
+                                     author=pk).delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(methods=('get',), detail=False,
             permission_classes=(IsAuthenticated, IsUserNotBanned))
     def subscriptions(self, request):
         """Список подписок пользоваетеля."""
+
         pages = self.paginate_queryset(
             User.objects.filter(authors__subscriber=self.request.user)
         )
@@ -123,12 +121,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @favorite.mapping.post
     def recipe_to_favorites(self, request, pk):
         """Добавляет рецепт в избранное."""
+
         recipe = get_object_or_404(Recipe, id=pk)
         return add_recipe(request, recipe, FavoriteSerializer)
 
     @favorite.mapping.delete
     def remove_recipe_from_favorites(self, request, pk):
         """Удаляет рецепт из избранного."""
+
         recipe = get_object_or_404(Recipe, id=pk)
         return delete_recipe(request, FavoriteRecipe, recipe)
 
@@ -139,12 +139,14 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @shopping_cart.mapping.post
     def recipe_to_cart(self, request, pk):
         """Добавляет рецепт в список покупок."""
+
         recipe = get_object_or_404(Recipe, id=pk)
         return add_recipe(request, recipe, CartSerializer)
 
     @shopping_cart.mapping.delete
     def remove_recipe_from_cart(self, request, pk):
         """Удаляет рецепт из списка покупок."""
+
         recipe = get_object_or_404(Recipe, id=pk)
         return delete_recipe(request, Cart, recipe)
 
@@ -152,4 +154,5 @@ class RecipeViewSet(viewsets.ModelViewSet):
             permission_classes=(IsAuthenticated, IsUserNotBanned))
     def download_shopping_cart(self, request):
         """Отправка файла со списком покупок."""
+
         return create_shoping_list(request.user)

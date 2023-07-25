@@ -3,20 +3,21 @@ from foodgram.models import Ingredient, Tag
 
 
 def password_validator(request):
+    """Проверяет корректность пароля."""
+
     new_password = request.data.get('new_password')
     current_password = request.data.get('current_password')
     user = request.user
-
     if not user.check_password(current_password):
         raise ValidationError('Неправильный пароль.')
     if new_password == current_password:
         raise ValidationError('Новый пароль должен отличаться от текущего.')
-
     return new_password
 
 
 def ingredients_validator(ingredients):
     """Проверяет корректность указанных ингредиентов."""
+
     ingredient_ids = []
     ingredient_amount = []
 
@@ -31,10 +32,8 @@ def ingredients_validator(ingredients):
                 'Количество ингредиента - должно быть числовым значением!')
         except KeyError:
             raise ValidationError('Некорректный ингредиент')
-
         if amount <= 1:
             raise ValidationError('Неправильное количество ингредиента')
-
         ingredient_ids.append(ingredient['id'])
         ingredient_amount.append(amount)
 
@@ -53,6 +52,7 @@ def ingredients_validator(ingredients):
 
 def tags_validator(tag_ids):
     """Проверяет корректность указанных тегов."""
+
     if not tag_ids:
         raise ValidationError('Не указаны теги')
     valid_tags = Tag.objects.filter(id__in=tag_ids)
