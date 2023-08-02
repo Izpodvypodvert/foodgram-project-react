@@ -6,9 +6,6 @@ from users.models import ADMIN, BANNED
 class IsUserNotBanned(BasePermission):
     """Проверяет забанен ли пользователь."""
 
-    # Написал в пачке сообщение.
-    # Тут я ловлю AttributeError,
-    # потому что у анонимного пользователя нет поля role.
     def has_permission(self, request, view):
         try:
             return bool(request.user.is_anonymous
