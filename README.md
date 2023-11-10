@@ -2,7 +2,7 @@
 
 ### Автор проекта: **Александр Каштанов.**
 
-### https://foodgram.freedynamicdns.org/
+<-- ### https://foodgram.freedynamicdns.org/ -->
 
 ### Логин администратора:
 
